@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 import 'package:stomp_dart_client/stomp_config.dart';
 import 'package:stomp_dart_client/stomp_frame.dart';
 import 'package:stomp_dart_client/stomp_handler.dart';
+import 'package:rxdart/subjects.dart';
 
 class BadStateException implements Exception {
   final String cause;
@@ -12,18 +13,25 @@ class BadStateException implements Exception {
   BadStateException(this.cause);
 }
 
+class OnConnectResult {
+  final StompClient stompClient;
+  final StompFrame stompFrame;
+
+  OnConnectResult(this.stompClient, this.stompFrame);
+}
+
 class StompClient {
   final StompConfig config;
-  final Function(StompClient, StompFrame) onConnect;
+  final PublishSubject<OnConnectResult> onConnectStream;
 
   StompHandler _handler;
+
   bool _isActive = false;
   Timer _reconnectTimer;
 
   StompClient({
     @required this.config,
-    @required this.onConnect,
-  });
+  }) : onConnectStream = PublishSubject();
 
   bool get connected => (_handler != null) && _handler.connected;
 
@@ -62,7 +70,7 @@ class StompClient {
         return;
       }
       config.onConnect(this, frame);
-      onConnect(this, frame);
+      onConnectStream.add(OnConnectResult(this, frame));
     }, onWebSocketDone: () {
       config.onWebSocketDone();
 
