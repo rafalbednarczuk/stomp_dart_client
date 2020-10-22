@@ -22,7 +22,7 @@ class OnConnectResult {
 
 class StompClient {
   final StompConfig config;
-  final PublishSubject<OnConnectResult> onConnectStream;
+  final PublishSubject<OnConnectResult> _onConnectSubject = PublishSubject();
 
   StompHandler _handler;
 
@@ -31,7 +31,7 @@ class StompClient {
 
   StompClient({
     @required this.config,
-  }) : onConnectStream = PublishSubject();
+  });
 
   bool get connected => (_handler != null) && _handler.connected;
 
@@ -70,7 +70,7 @@ class StompClient {
         return;
       }
       config.onConnect(this, frame);
-      onConnectStream.add(OnConnectResult(this, frame));
+      _onConnectSubject.add(OnConnectResult(this, frame));
     }, onWebSocketDone: () {
       config.onWebSocketDone();
 
@@ -111,7 +111,6 @@ class StompClient {
 
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
-
     if (config.reconnectDelay > 0) {
       _reconnectTimer =
           Timer(Duration(milliseconds: config.reconnectDelay), () {
@@ -119,4 +118,6 @@ class StompClient {
       });
     }
   }
+
+  Stream<OnConnectResult> onConnectResultStream() => _onConnectSubject.stream;
 }
