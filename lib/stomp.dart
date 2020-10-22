@@ -8,17 +8,22 @@ import 'package:stomp_dart_client/stomp_handler.dart';
 
 class BadStateException implements Exception {
   final String cause;
+
   BadStateException(this.cause);
 }
 
 class StompClient {
   final StompConfig config;
+  final Function(StompClient, StompFrame) onConnect;
 
   StompHandler _handler;
   bool _isActive = false;
   Timer _reconnectTimer;
 
-  StompClient({@required this.config});
+  StompClient({
+    @required this.config,
+    @required this.onConnect,
+  });
 
   bool get connected => (_handler != null) && _handler.connected;
 
@@ -57,6 +62,7 @@ class StompClient {
         return;
       }
       config.onConnect(this, frame);
+      onConnect(this, frame);
     }, onWebSocketDone: () {
       config.onWebSocketDone();
 
